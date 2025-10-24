@@ -1,17 +1,13 @@
-
 from sqlalchemy.orm import Session
-
 from main.core.core import create_tables
 from fastapi import FastAPI, Depends, HTTPException, Response, Request
 from main.schemas.schemas import UserCreate, UserUpdate, UserLogin
 from main.database.database import get_session
 from main.core.core import create_user, update_user, deactivate_user, login_user, logout_user, get_current_user, check_access
-from main.mock_data import MOCK_PASSENGERS, MOCK_FLIGHTS, MOCK_TICKETS
+from main.mock_data import MOCK_PASSENGERS
 import uvicorn
 
 app = FastAPI()
-
-
 
 @app.post("/register")
 def register(user: UserCreate, session: Session = Depends(get_session)):

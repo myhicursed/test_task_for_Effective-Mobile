@@ -13,10 +13,10 @@ def create_tables():
 
 def create_user(session: Session, user: UserCreate):
     if user.password != user.password_repeat:
-        raise ValueError("Пароли не совпадают")
+        raise HTTPException(status_code=400, detail="Пароли не совпадают")
     user_email = session.query(Users).filter(Users.email == user.email).first()
     if user_email:
-        raise ValueError("Пользователь с таким email уже существует")
+        raise HTTPException(status_code=409, detail="Пользователь с таким email уже существует")
 
     """
     ограничение в 72 байта во избежание ошибки по длине пароля
@@ -43,7 +43,7 @@ def update_user(user_id: int,
                 ):
     user = session.query(Users).filter(Users.user_id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
+        raise HTTPException(status_code=404, detail="Пользователь с таким email уже существует")
 
     if update_data.first_name:
         user.first_name = update_data.first_name
@@ -54,7 +54,7 @@ def update_user(user_id: int,
     if update_data.email:
         existing = session.query(Users).filter(Users.email == update_data.email).first()
         if existing and existing.user_id != user.user_id:
-            raise HTTPException(status_code=409, detail="Email уже используется")
+            raise HTTPException(status_code=409, detail="Пользователь с таким email уже существует")
         user.email = update_data.email
     if update_data.password:
         user.password_hash = bcrypt.hash(update_data.password[:72])
@@ -95,7 +95,7 @@ def login_user(session: Session,
         httponly=True,
         max_age=24 * 3600
     )
-    return {"message": "Login успешен", "user_id": user.user_id}
+    return {"message": "Успешно", "user_id": user.user_id}
 
 def logout_user(session: Session, request: Request, response: Response):
     session_id = request.cookies.get("sessionid")
@@ -105,7 +105,7 @@ def logout_user(session: Session, request: Request, response: Response):
             session.delete(db_session)
             session.commit()
         response.delete_cookie("sessionid")
-    return {"message": "Logout успешен"}
+    return {"message": "Успешно"}
 
 def get_current_user(db: Session, request: Request):
     session_id = request.cookies.get("sessionid")
@@ -122,7 +122,7 @@ def get_current_user(db: Session, request: Request):
 
 def check_access(user, write=False):
     if not user:
-        raise HTTPException(status_code=401, detail="Не авторизован")
+        raise HTTPException(status_code=401, detail="Пользователь не найден")
     role = user.role.role_name
     if write and not permissions[role]["write"]:
         raise HTTPException(status_code=403, detail="Изменение запрещено")
